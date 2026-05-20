@@ -6,10 +6,22 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { encryptRequestClientHook, decryptResponseClientHook } from '../utils/encryption';
 
-if (!process.env.REACT_APP_SERVER_URL) throw `Environmental variable 'REACT_APP_SERVER_URL' is required.`;
+const DEFAULT_SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = process.env.REACT_APP_SERVER_URL || DEFAULT_SERVER_URL;
+
+if (!process.env.REACT_APP_SERVER_URL && process.env.NODE_ENV === 'production') {
+    throw new Error("Environmental variable 'REACT_APP_SERVER_URL' is required in production.");
+}
+
+if (!process.env.REACT_APP_SERVER_URL) {
+    console.warn(
+        "REACT_APP_SERVER_URL is not set. Falling back to default development server URL:",
+        SERVER_URL
+    );
+}
 
 const app = feathers();
-const restClient = rest(process.env.REACT_APP_SERVER_URL);
+const restClient = rest(SERVER_URL);
 app.configure(restClient.axios(axios));
 
 function isTokenExpired(token) {
@@ -24,7 +36,7 @@ function isTokenExpired(token) {
     }
 }
 
-const socket = io(process.env.REACT_APP_SERVER_URL, {
+const socket = io(SERVER_URL, {
     transports: ['websocket', 'polling'],
     withCredentials: true,
     reconnection: true,

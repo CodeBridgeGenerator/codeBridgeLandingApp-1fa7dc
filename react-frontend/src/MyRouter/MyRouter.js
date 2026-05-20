@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 import ProtectedRoute from './ProtectedRoute';
 import NoMatch from './NoMatch';
 import { socket } from '../services/restClient';
+import WebRouter from './WebRouter/WebRouter';
 import ProjectSideBarLayout from '../components/Layouts/ProjectSideBarLayout';
 import LoginPage from '../components/LoginPage/LoginPage';
 import SignUpPage from '../components/LoginPage/signUp/SignUpPage';
@@ -15,6 +16,7 @@ import Account from '../components/cb_components/Account/Account';
 import CBRouter from './CBRouter';
 import AppRouter from './AppRouter';
 import '../assets/mainTheme/modal.css';
+import HomePage from '../components/web_components/Homepage/Homepage';
 
 //  ~cb-add-import~
 
@@ -42,7 +44,7 @@ const MyRouter = (props) => {
             socket.off('connect', onConnect);
             socket.off('disconnect', onDisconnect);
         };
-    }, [modal]);
+    }, [modal]); // 👈 Fixed: Only closing the useEffect hook array here now
 
     // <div id="reconnect-modal" className="modal-overlay" style={{ display: `${modal}` }}>
     //             <div className="modal-content">
@@ -54,9 +56,9 @@ const MyRouter = (props) => {
 
     return (
         <Routes>
+            {/* ✅ FIX 1: Allow unauthenticated users to see the landing view on "/" */}
             <Route
                 path="/"
-                exact
                 element={
                     props.isLoggedIn ? (
                         <div className="flex min-h-[calc(100vh-5rem)] bg-white mt-20">
@@ -65,13 +67,17 @@ const MyRouter = (props) => {
                             </ProjectSideBarLayout>
                         </div>
                     ) : (
-                        <LoginPage />
+                        <WebRouter /> // 👈 Show WebRouter instead of LoginPage
                     )
                 }
             />
+
+            {/* ✅ FIX 2: Explicitly pass down the fallback route so WebRouter can handle it */}
+            <Route path="/homepage/*" element={<WebRouter />} />
+
+            {/* Keep your original auth paths perfectly intact */}
             <Route
                 path="/login"
-                exact
                 element={
                     props.isLoggedIn ? (
                         <div className="flex min-h-[calc(100vh-5rem)] bg-white mt-20">
@@ -89,6 +95,7 @@ const MyRouter = (props) => {
             <Route path="/maintenance" exact element={<MaintenancePage />} />
             <Route path="/login-faq" exact element={<LoginFaqPage />} />
 
+            {/* Protected Dashboard Context Routes */}
             <Route element={<ProtectedRoute redirectPath={'/login'} />}>
                 <Route path="/project" exact element={<DashboardWelcome />} />
                 <Route path="/account" exact element={<Account />} />
@@ -99,7 +106,7 @@ const MyRouter = (props) => {
             <Route path="*" element={<NoMatch />} />
         </Routes>
     );
-};
+}; // 👈 This curly brace now safely closes the MyRouter component block
 
 const mapState = (state) => {
     const { isLoggedIn } = state.auth;
